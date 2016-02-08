@@ -73,6 +73,7 @@ public final class BarcodeCaptureActivity extends AppCompatActivity {
     public static final String UseFlash = "UseFlash";
     public static final String BarcodeObject = "Barcode";
 
+
     private CameraSource mCameraSource;
     private CameraSourcePreview mPreview;
     private GraphicOverlay<BarcodeGraphic> mGraphicOverlay;

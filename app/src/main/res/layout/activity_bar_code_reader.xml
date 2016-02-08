@@ -55,30 +55,50 @@
                 android:textColor="@android:color/black"
                 android:text="sdjfkfk"/>
         </LinearLayout>
-        <LinearLayout
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:weightSum="1.0">
+            android:layout_height="match_parent">
 
             <android.support.v7.widget.AppCompatButton
                 android:id="@+id/button1"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
                 android:background="@color/colortextview"
+                android:layout_toLeftOf="@+id/divider"
+                android:layout_alignParentLeft="true"
                 android:text="Scan Another"
-                android:textAllCaps="false"
-                android:layout_weight="0.5"/>
+                android:textAllCaps="false"/>
+
+            <TextView
+                android:id="@+id/divider"
+                android:layout_width="1dp"
+                android:layout_height="1dp"
+                android:visibility="invisible"
+                android:layout_centerInParent="true"/>
             <android.support.v7.widget.AppCompatButton
                 android:id="@+id/button_save"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_centerInParent="true"
+                android:layout_toRightOf="@+id/divider"
                 android:background="@color/colorloginbutton"
                 android:text="Save"
+                android:textAllCaps="false"/>
+
+            <android.support.v7.widget.AppCompatButton
+                android:id="@+id/logout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:background="@android:color/white"
                 android:textAllCaps="false"
-                android:layout_weight="0.5"/>
-        </LinearLayout>
+                android:gravity="center"
+                android:textColor="@android:color/holo_red_dark"
+                android:text="Logout/Change Credentials"
+                android:layout_marginBottom="10dp"/>
+        </RelativeLayout>
 
     </LinearLayout>
 

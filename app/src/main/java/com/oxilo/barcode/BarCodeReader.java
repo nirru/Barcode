@@ -41,9 +41,10 @@ public class BarCodeReader extends AppCompatActivity {
     private static final int RC_BARCODE_CAPTURE = 9001;
     private static final String TAG = "BarcodeMain";
     TextView text;
-    AppCompatButton scan_another_btn,save_btn1;
+    AppCompatButton scan_another_btn,save_btn1,logout_btn;
     TextView barcodeResult;
     String mBarcodevalue="121112";
+    boolean isCameraOpen = false;
 
     CustomRequest customRequest;
     private View mProgressView;
@@ -56,20 +57,27 @@ public class BarCodeReader extends AppCompatActivity {
 
         init();
 
-        barCodeReaderLauncher();
+//        if (!isCameraOpen)
+//        barCodeReaderLauncher();
     }
 
     private void init(){
         if (getIntent() != null){
             customRequest = getIntent().getParcelableExtra(getResources().getString(R.string.praceable_modal_regsitration));
+            mBarcodevalue = getIntent().getStringExtra(LoginActivity.BARCODERESULT);
         }
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
         scan_another_btn=(AppCompatButton)findViewById(R.id.button1);
         save_btn1=(AppCompatButton)findViewById(R.id.button_save);
         text = (TextView)findViewById(R.id.barcoderesult);
+        logout_btn = (AppCompatButton) findViewById(R.id.logout);
 
-//        save_btn.setEnabled(true);
+        try {
+            text.setText(mBarcodevalue + "");
+        }catch (Exception ex){
+            ex.printStackTrace();
+        }
 
         scan_another_btn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -88,59 +96,39 @@ public class BarCodeReader extends AppCompatActivity {
                 doSomething();
             }
         });
-    }
 
-    private void barCodeReaderLauncher(){
-        Intent intent = new Intent(this, BarcodeCaptureActivity.class);
-        intent.putExtra(BarcodeCaptureActivity.AutoFocus, true);
-        intent.putExtra(BarcodeCaptureActivity.UseFlash, false);
-
-        startActivityForResult(intent, RC_BARCODE_CAPTURE);
-    }
-
-    /**
-     * Called when an activity you launched exits, giving you the requestCode
-     * you started it with, the resultCode it returned, and any additional
-     * data from it.  The <var>resultCode</var> will be
-     * {@link #RESULT_CANCELED} if the activity explicitly returned that,
-     * didn't return any result, or crashed during its operation.
-     * <p/>
-     * <p>You will receive this call immediately before onResume() when your
-     * activity is re-starting.
-     * <p/>
-     *
-     * @param requestCode The integer request code originally supplied to
-     *                    startActivityForResult(), allowing you to identify who this
-     *                    result came from.
-     * @param resultCode  The integer result code returned by the child activity
-     *                    through its setResult().
-     * @param data        An Intent, which can return result data to the caller
-     *                    (various data can be attached to Intent "extras").
-     * @see #startActivityForResult
-     * @see #createPendingResult
-     * @see #setResult(int)
-     */
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == RC_BARCODE_CAPTURE) {
-            if (resultCode == CommonStatusCodes.SUCCESS) {
-                if (data != null) {
-                    Barcode barcode = data.getParcelableExtra(BarcodeCaptureActivity.BarcodeObject);
-                    text.setText(barcode.displayValue + "");
-                    Log.d(TAG, "Barcode read: " + barcode.displayValue);
-                } else {
-                    text.setText(R.string.barcode_failure);
-                    Log.d(TAG, "No barcode captured, intent data is null");
+        logout_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    resetPrefs();
+                    final Intent mintent = new Intent(BarCodeReader.this, LoginActivity.class);
+                    mintent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(mintent);
+                }catch (Exception ex){
+                    ex.printStackTrace();
                 }
-            } else {
-                text.setText(String.format(getString(R.string.barcode_error),
-                        CommonStatusCodes.getStatusCodeString(resultCode)));
             }
-        }
-        else {
-            super.onActivityResult(requestCode, resultCode, data);
+        });
+    }
+
+    public  void resetPrefs(){
+        BarCodePrefs barCodePrefs = ApplicationController.getInstance().getMobiKytePrefs();
+        if(barCodePrefs != null) {
+            barCodePrefs.clear();
+            CustomRequest myCustomRequest = new CustomRequest();
+            myCustomRequest.setEmail("");
+            myCustomRequest.setPassword("");
+            myCustomRequest.setClientId(customRequest.getClientId());
+            myCustomRequest.setClientSecret(customRequest.getClientSecret());
+            myCustomRequest.setSecurityToken(customRequest.getSecurityToken());
+            barCodePrefs.putObject("user", myCustomRequest);
+            barCodePrefs.commit();
+        } else {
+            android.util.Log.e("MOBIKYTE PREFS==", "Preference is null");
         }
     }
+
 
     /**
      * Shows the progress UI and hides the login form.

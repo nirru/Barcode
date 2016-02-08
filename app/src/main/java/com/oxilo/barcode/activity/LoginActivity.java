@@ -28,10 +28,15 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.google.android.gms.common.api.CommonStatusCodes;
+import com.google.android.gms.vision.barcode.Barcode;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.oxilo.barcode.AppConstants;
+import com.oxilo.barcode.ApplicationController;
+import com.oxilo.barcode.BarCodePrefs;
 import com.oxilo.barcode.BarCodeReader;
+import com.oxilo.barcode.BarcodeCaptureActivity;
 import com.oxilo.barcode.Pojo.CustomRequest;
 import com.oxilo.barcode.R;
 
@@ -45,6 +50,10 @@ public class LoginActivity  extends AppCompatActivity {
     private View mProgressView;
     private View mLoginFormView;
     Toolbar toolbar;
+    CustomRequest customRequest;
+    public static final String BARCODERESULT = "barcodeResult";
+    private static final int RC_BARCODE_CAPTURE = 9001;
+    private static final String TAG = "BarcodeMain";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,6 +127,33 @@ public class LoginActivity  extends AppCompatActivity {
                     attemptLogin();
                 }
             });
+
+//            mEmailView.setText(AppConstants.USERNAME);
+//            mPasswordView.setText(AppConstants.PASSWORD);
+//            mConsumerSecret.setText(AppConstants.CLIENT_SECRET);
+//            mConsumerKey.setText(AppConstants.CLIENT_ID);
+//            mSecurityToken.setText(AppConstants.SECURITY_TOKEN);
+
+            BarCodePrefs barCodePrefs = ApplicationController.getInstance().getMobiKytePrefs();
+            if(barCodePrefs != null) {
+               if (!barCodePrefs.getObject("user",CustomRequest.class).getEmail().equals("")){
+                   doSomething(barCodePrefs.getObject("user",CustomRequest.class).getEmail(),barCodePrefs.getObject("user",CustomRequest.class).getPassword()
+                   ,barCodePrefs.getObject("user",CustomRequest.class).getClientSecret(),
+                           barCodePrefs.getObject("user",CustomRequest.class).getClientId(),barCodePrefs.getObject("user",CustomRequest.class).getSecurityToken());
+               }
+                else{
+                    mEmailView.setText(barCodePrefs.getObject("user",CustomRequest.class).getEmail());
+                    mPasswordView.setText(barCodePrefs.getObject("user",CustomRequest.class).getPassword());
+                    mConsumerSecret.setText(barCodePrefs.getObject("user",CustomRequest.class).getClientSecret());
+                    mConsumerKey.setText(barCodePrefs.getObject("user",CustomRequest.class).getClientId());
+                    mSecurityToken.setText(barCodePrefs.getObject("user",CustomRequest.class).getSecurityToken());
+                }
+            } else {
+                customRequest = new CustomRequest();
+                customRequest.setCameraOpenFirstTime(false);
+                android.util.Log.e("BarCode PREFS==", "Preference is null");
+            }
+
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -197,7 +233,7 @@ public class LoginActivity  extends AppCompatActivity {
             // Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
             // Authicate user
-            doSomething();
+            doSomething(email,password,consumerSecret,consumerKey,securityToken);
         }
 
     }
@@ -239,24 +275,20 @@ public class LoginActivity  extends AppCompatActivity {
     }
 
 
-    private void doSomething() {
+    private void doSomething(String username, String password,String consumer_secret,String consumer_key,String security_token) {
         try {
             showProgress(true);
             RequestQueue mRequestQueue = Volley.newRequestQueue(getApplicationContext());
-            String username = mEmailView.getText().toString().trim();
-            String password = mPasswordView.getText().toString().trim();
-            String client_secret = mConsumerSecret.getText().toString().trim();
-            String client_key = mConsumerKey.getText().toString().trim();
             String uri = String.format("https://login.salesforce.com/services/oauth2/token?grant_type=%1$s&password=%2$s&username=%3$s&client_secret=%4$s&client_id=%5$s",
                     AppConstants.GRANT_TYPE,
                     password,
                     username,
-                    client_secret,
-                    client_key);
+                    consumer_secret,
+                    consumer_key);
 
             StringRequest myReq = new StringRequest(Request.Method.POST,
                     uri,
-                    createMyReqSuccessListener(),
+                    createMyReqSuccessListener(username, password,consumer_secret,consumer_key,security_token),
                     createMyReqErrorListener());
 
             myReq.setRetryPolicy(new DefaultRetryPolicy(
@@ -270,21 +302,29 @@ public class LoginActivity  extends AppCompatActivity {
         }
     }
 
-    private Response.Listener<String> createMyReqSuccessListener(){
+    private Response.Listener<String> createMyReqSuccessListener(final String username, final String password, final String client_secret, final String client_key,final String security_token){
         return new Response.Listener<String>(){
             @Override
             public void onResponse(String response) {
                 try {
                     Gson gson = new GsonBuilder().create();
-                    CustomRequest customRequest = gson.fromJson(response, CustomRequest.class);
-                    customRequest.setEmail(mEmailView.getText().toString());
-                    customRequest.setPassword(mPasswordView.getText().toString());
-                    customRequest.setClientSecret(AppConstants.CLIENT_SECRET);
-                    customRequest.setClientId(AppConstants.CLIENT_ID);
-                    Intent i = new Intent(LoginActivity.this,BarCodeReader.class);
-                    i.putExtra(getResources().getString(R.string.praceable_modal_regsitration), customRequest);
-                    startActivity(i);
-                    return;
+                    customRequest = gson.fromJson(response, CustomRequest.class);
+                    customRequest.setEmail(username);
+                    customRequest.setPassword(password);
+                    customRequest.setClientSecret(client_secret);
+                    customRequest.setClientId(client_key);
+                    customRequest.setSecurityToken(security_token);
+
+                    BarCodePrefs mobiKytePrefs = ApplicationController.getInstance().getMobiKytePrefs();
+                    if(mobiKytePrefs != null) {
+                        mobiKytePrefs.putObject("user", customRequest);
+                        mobiKytePrefs.commit();
+
+                    } else {
+                        android.util.Log.e("MOBIKYTE PREFS==", "Preference is null");
+                    }
+
+                    barCodeReaderLauncher();
                 }catch (Exception ex){
                     ex.printStackTrace();
                 }
@@ -307,5 +347,64 @@ public class LoginActivity  extends AppCompatActivity {
 
             }
         };
+    }
+
+    private void barCodeReaderLauncher(){
+        Intent intent = new Intent(this, BarcodeCaptureActivity.class);
+        intent.putExtra(BarcodeCaptureActivity.AutoFocus, true);
+        intent.putExtra(BarcodeCaptureActivity.UseFlash, false);
+
+        startActivityForResult(intent, RC_BARCODE_CAPTURE);
+    }
+
+    /**
+     * Called when an activity you launched exits, giving you the requestCode
+     * you started it with, the resultCode it returned, and any additional
+     * data from it.  The <var>resultCode</var> will be
+     * {@link #RESULT_CANCELED} if the activity explicitly returned that,
+     * didn't return any result, or crashed during its operation.
+     * <p/>
+     * <p>You will receive this call immediately before onResume() when your
+     * activity is re-starting.
+     * <p/>
+     *
+     * @param requestCode The integer request code originally supplied to
+     *                    startActivityForResult(), allowing you to identify who this
+     *                    result came from.
+     * @param resultCode  The integer result code returned by the child activity
+     *                    through its setResult().
+     * @param data        An Intent, which can return result data to the caller
+     *                    (various data can be attached to Intent "extras").
+     * @see #startActivityForResult
+     * @see #createPendingResult
+     * @see #setResult(int)
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == RC_BARCODE_CAPTURE) {
+            if (resultCode == CommonStatusCodes.SUCCESS) {
+                if (data != null) {
+                    Barcode barcode = data.getParcelableExtra(BarcodeCaptureActivity.BarcodeObject);
+                    Intent i = new Intent(LoginActivity.this,BarCodeReader.class);
+                    i.putExtra(BARCODERESULT,barcode.displayValue);
+                    BarCodePrefs barCodePrefs = ApplicationController.getInstance().getMobiKytePrefs();
+                    if(barCodePrefs != null) {
+                      customRequest = barCodePrefs.getObject("user", CustomRequest.class);
+                    }
+                    Log.e("cdfdfc",customRequest.getClientId());
+                    i.putExtra(getResources().getString(R.string.praceable_modal_regsitration), customRequest);
+                    i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(i);
+                    return;
+                } else {
+                    Log.d(TAG, "No barcode captured, intent data is null");
+                }
+            } else {
+               Toast.makeText(LoginActivity.this,getString(R.string.barcode_error),Toast.LENGTH_SHORT).show();
+            }
+        }
+        else {
+            super.onActivityResult(requestCode, resultCode, data);
+        }
     }
 }

@@ -36,8 +36,15 @@ public class CustomRequest implements Parcelable{
 
     private String clientSecret;
     private String clientId;
+    private String securityToken;
 
-    protected CustomRequest(Parcel in) {
+    private boolean isCameraOpenFirstTime=false;
+
+    public CustomRequest(){
+
+    }
+
+    public CustomRequest(Parcel in) {
         accessToken = in.readString();
         instanceUrl = in.readString();
         id = in.readString();
@@ -48,6 +55,8 @@ public class CustomRequest implements Parcelable{
         password = in.readString();
         clientSecret = in.readString();
         clientId = in.readString();
+        securityToken = in.readString();
+        isCameraOpenFirstTime = in.readByte() != 0;
     }
 
     public static final Creator<CustomRequest> CREATOR = new Creator<CustomRequest>() {
@@ -203,6 +212,22 @@ public class CustomRequest implements Parcelable{
         this.clientId = clientId;
     }
 
+    public String getSecurityToken() {
+        return securityToken;
+    }
+
+    public void setSecurityToken(String securityToken) {
+        this.securityToken = securityToken;
+    }
+
+    public boolean isCameraOpenFirstTime() {
+        return isCameraOpenFirstTime;
+    }
+
+    public void setCameraOpenFirstTime(boolean cameraOpenFirstTime) {
+        isCameraOpenFirstTime = cameraOpenFirstTime;
+    }
+
 
     @Override
     public int describeContents() {
@@ -221,5 +246,7 @@ public class CustomRequest implements Parcelable{
         dest.writeString(password);
         dest.writeString(clientSecret);
         dest.writeString(clientId);
+        dest.writeString(securityToken);
+        dest.writeByte((byte) (isCameraOpenFirstTime ? 1 : 0));
     }
 }
