@@ -32,13 +32,18 @@ import com.google.android.gms.common.api.CommonStatusCodes;
 import com.google.android.gms.vision.barcode.Barcode;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import com.oxilo.barcode.AppConstants;
 import com.oxilo.barcode.ApplicationController;
 import com.oxilo.barcode.BarCodePrefs;
 import com.oxilo.barcode.BarCodeReader;
 import com.oxilo.barcode.BarcodeCaptureActivity;
 import com.oxilo.barcode.Pojo.CustomRequest;
+import com.oxilo.barcode.Pojo.ErrorModal;
 import com.oxilo.barcode.R;
+import com.oxilo.barcode.volley.VolleyErrorHelper;
+
+import java.util.Map;
 
 public class LoginActivity  extends AppCompatActivity {
 
@@ -130,8 +135,8 @@ public class LoginActivity  extends AppCompatActivity {
 
 //            mEmailView.setText(AppConstants.USERNAME);
 //            mPasswordView.setText(AppConstants.PASSWORD);
-//            mConsumerSecret.setText(AppConstants.CLIENT_SECRET);
-//            mConsumerKey.setText(AppConstants.CLIENT_ID);
+//            mConsumerSecret.setText(AppConstants.CONSUMER_SECRET);
+//            mConsumerKey.setText(AppConstants.CONSUMER_KEY);
 //            mSecurityToken.setText(AppConstants.SECURITY_TOKEN);
 
             BarCodePrefs barCodePrefs = ApplicationController.getInstance().getMobiKytePrefs();
@@ -286,6 +291,8 @@ public class LoginActivity  extends AppCompatActivity {
                     consumer_secret,
                     consumer_key);
 
+            Log.e("URL","" + uri);
+
             StringRequest myReq = new StringRequest(Request.Method.POST,
                     uri,
                     createMyReqSuccessListener(username, password,consumer_secret,consumer_key,security_token),
@@ -339,8 +346,16 @@ public class LoginActivity  extends AppCompatActivity {
             public void onErrorResponse(VolleyError volleyError) {
                 try {
                     showProgress(false);
-                    Toast.makeText(getApplicationContext(), volleyError.getMessage(), Toast.LENGTH_LONG)
-                            .show();
+                    if (volleyError.networkResponse != null){
+                        if(volleyError.networkResponse.statusCode==400) {
+                            Gson gson = new GsonBuilder().create();
+                           ErrorModal errorModal = gson.fromJson(new String(volleyError.networkResponse.data), ErrorModal.class);
+                            Toast.makeText(getApplicationContext(), errorModal.getError(), Toast.LENGTH_LONG).show();
+                        }else{
+                            Toast.makeText(getApplicationContext(), VolleyErrorHelper.getMessage(volleyError,LoginActivity.this), Toast.LENGTH_LONG).show();
+                        }
+                    }
+
                 }catch (Exception ex){
                     ex.printStackTrace();
                 }
