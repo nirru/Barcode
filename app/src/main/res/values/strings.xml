@@ -46,5 +46,9 @@
 
     <string name="praceable_modal_regsitration">MODAL_REGISTRATION</string>
 
+    <!--TODO: Login Url Error String-->
+    <string name="invalid_grant">Invalid UserName OR Password</string>
+    <string name="invalid_client">Invalid Consumer Secret</string>
+    <string name="invalid_client_id">Invalid Consumer Key</string>
 
 </resources>

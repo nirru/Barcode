@@ -37,6 +37,9 @@ public class CustomRequest implements Parcelable{
     private String clientSecret;
     private String clientId;
     private String securityToken;
+    private double latitude;
+
+    private double longitude;
 
     private boolean isCameraOpenFirstTime=false;
 
@@ -57,6 +60,8 @@ public class CustomRequest implements Parcelable{
         clientId = in.readString();
         securityToken = in.readString();
         isCameraOpenFirstTime = in.readByte() != 0;
+        latitude = in.readDouble();
+        longitude = in.readDouble();
     }
 
     public static final Creator<CustomRequest> CREATOR = new Creator<CustomRequest>() {
@@ -228,6 +233,23 @@ public class CustomRequest implements Parcelable{
         isCameraOpenFirstTime = cameraOpenFirstTime;
     }
 
+    public double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
+    }
+
+    public double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(double latitude) {
+        this.latitude = latitude;
+    }
+
+
 
     @Override
     public int describeContents() {
@@ -248,5 +270,7 @@ public class CustomRequest implements Parcelable{
         dest.writeString(clientId);
         dest.writeString(securityToken);
         dest.writeByte((byte) (isCameraOpenFirstTime ? 1 : 0));
+        dest.writeDouble(latitude);
+        dest.writeDouble(longitude);
     }
 }

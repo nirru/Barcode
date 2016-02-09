@@ -82,10 +82,8 @@ public class BarCodeReader extends AppCompatActivity {
         scan_another_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent i = new Intent(BarCodeReader.this,BarCodeReader.class);
-                i.putExtra(getResources().getString(R.string.praceable_modal_regsitration), customRequest);
-                i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(i);
+                save_btn1.setEnabled(true);
+               barCodeReaderLauncher();
                 return;
             }
         });
@@ -112,6 +110,13 @@ public class BarCodeReader extends AppCompatActivity {
         });
     }
 
+    private void barCodeReaderLauncher(){
+        Intent intent = new Intent(this, BarcodeCaptureActivity.class);
+        intent.putExtra(BarcodeCaptureActivity.AutoFocus, true);
+        intent.putExtra(BarcodeCaptureActivity.UseFlash, false);
+
+        startActivityForResult(intent, RC_BARCODE_CAPTURE);
+    }
     public  void resetPrefs(){
         BarCodePrefs barCodePrefs = ApplicationController.getInstance().getMobiKytePrefs();
         if(barCodePrefs != null) {
@@ -228,6 +233,8 @@ public class BarCodeReader extends AppCompatActivity {
         JSONObject jsonBody = new JSONObject();
         try {
             jsonBody.put("CIRCEBarcode__Barcode__c", text.getText().toString().trim());
+            jsonBody.put("CIRCEBarcode__Geolocation__Latitude__s", customRequest.getLatitude());
+            jsonBody.put("CIRCEBarcode__Geolocation__Longitude__s", customRequest.getLongitude());
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -289,4 +296,44 @@ public class BarCodeReader extends AppCompatActivity {
     }
 
 
+    /**
+     * Called when an activity you launched exits, giving you the requestCode
+     * you started it with, the resultCode it returned, and any additional
+     * data from it.  The <var>resultCode</var> will be
+     * {@link #RESULT_CANCELED} if the activity explicitly returned that,
+     * didn't return any result, or crashed during its operation.
+     * <p/>
+     * <p>You will receive this call immediately before onResume() when your
+     * activity is re-starting.
+     * <p/>
+     *
+     * @param requestCode The integer request code originally supplied to
+     *                    startActivityForResult(), allowing you to identify who this
+     *                    result came from.
+     * @param resultCode  The integer result code returned by the child activity
+     *                    through its setResult().
+     * @param data        An Intent, which can return result data to the caller
+     *                    (various data can be attached to Intent "extras").
+     * @see #startActivityForResult
+     * @see #createPendingResult
+     * @see #setResult(int)
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == RC_BARCODE_CAPTURE) {
+            if (resultCode == CommonStatusCodes.SUCCESS) {
+                if (data != null) {
+                    Barcode barcode = data.getParcelableExtra(BarcodeCaptureActivity.BarcodeObject);
+                    text.setText(barcode.displayValue);
+                } else {
+                    Log.d(TAG, "No barcode captured, intent data is null");
+                }
+            } else {
+                Toast.makeText(BarCodeReader.this,getString(R.string.barcode_error),Toast.LENGTH_SHORT).show();
+            }
+        }
+        else {
+            super.onActivityResult(requestCode, resultCode, data);
+        }
+    }
 }

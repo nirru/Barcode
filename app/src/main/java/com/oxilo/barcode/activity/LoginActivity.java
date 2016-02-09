@@ -38,6 +38,7 @@ import com.oxilo.barcode.ApplicationController;
 import com.oxilo.barcode.BarCodePrefs;
 import com.oxilo.barcode.BarCodeReader;
 import com.oxilo.barcode.BarcodeCaptureActivity;
+import com.oxilo.barcode.GPSTracker;
 import com.oxilo.barcode.Pojo.CustomRequest;
 import com.oxilo.barcode.Pojo.ErrorModal;
 import com.oxilo.barcode.R;
@@ -56,6 +57,9 @@ public class LoginActivity  extends AppCompatActivity {
     private View mLoginFormView;
     Toolbar toolbar;
     CustomRequest customRequest;
+    // GPSTracker class
+    GPSTracker gps;
+    double latitude,longitude;
     public static final String BARCODERESULT = "barcodeResult";
     private static final int RC_BARCODE_CAPTURE = 9001;
     private static final String TAG = "BarcodeMain";
@@ -64,7 +68,26 @@ public class LoginActivity  extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+        // create class object
+        gps = new GPSTracker(LoginActivity.this);
         initUiView();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // check if GPS enabled
+        if(gps.canGetLocation()){
+
+            latitude = gps.getLatitude();
+            longitude = gps.getLongitude();
+
+        }else{
+            // can't get location
+            // GPS or Network is not enabled
+            // Ask user to enable GPS/network in settings
+            gps.showSettingsAlert();
+        }
     }
 
     @Override
@@ -135,9 +158,9 @@ public class LoginActivity  extends AppCompatActivity {
 
 //            mEmailView.setText(AppConstants.USERNAME);
 //            mPasswordView.setText(AppConstants.PASSWORD);
-//            mConsumerSecret.setText(AppConstants.CONSUMER_SECRET);
-//            mConsumerKey.setText(AppConstants.CONSUMER_KEY);
-//            mSecurityToken.setText(AppConstants.SECURITY_TOKEN);
+            mConsumerSecret.setText(AppConstants.CONSUMER_SECRET);
+            mConsumerKey.setText(AppConstants.CONSUMER_KEY);
+            mSecurityToken.setText(AppConstants.SECURITY_TOKEN);
 
             BarCodePrefs barCodePrefs = ApplicationController.getInstance().getMobiKytePrefs();
             if(barCodePrefs != null) {
@@ -321,6 +344,8 @@ public class LoginActivity  extends AppCompatActivity {
                     customRequest.setClientSecret(client_secret);
                     customRequest.setClientId(client_key);
                     customRequest.setSecurityToken(security_token);
+                    customRequest.setLatitude(latitude);
+                    customRequest.setLongitude(longitude);
 
                     BarCodePrefs mobiKytePrefs = ApplicationController.getInstance().getMobiKytePrefs();
                     if(mobiKytePrefs != null) {
@@ -350,7 +375,14 @@ public class LoginActivity  extends AppCompatActivity {
                         if(volleyError.networkResponse.statusCode==400) {
                             Gson gson = new GsonBuilder().create();
                            ErrorModal errorModal = gson.fromJson(new String(volleyError.networkResponse.data), ErrorModal.class);
-                            Toast.makeText(getApplicationContext(), errorModal.getError(), Toast.LENGTH_LONG).show();
+                            if (errorModal.getError().toString().equals("invalid_grant")){
+                                Toast.makeText(getApplicationContext(), R.string.invalid_grant, Toast.LENGTH_LONG).show();
+                            }else if (errorModal.getError().toString().equals("invalid_client")){
+                                Toast.makeText(getApplicationContext(), R.string.invalid_client, Toast.LENGTH_LONG).show();
+                            }
+                            else if (errorModal.getError().toString().equals("invalid_client_id")){
+                                Toast.makeText(getApplicationContext(), R.string.invalid_client_id, Toast.LENGTH_LONG).show();
+                            }
                         }else{
                             Toast.makeText(getApplicationContext(), VolleyErrorHelper.getMessage(volleyError,LoginActivity.this), Toast.LENGTH_LONG).show();
                         }
