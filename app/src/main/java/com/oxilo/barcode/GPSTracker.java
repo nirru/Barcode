@@ -13,6 +13,8 @@ import android.os.IBinder;
 import android.provider.Settings;
 import android.util.Log;
 
+import com.oxilo.barcode.activity.LoginActivity;
+
 public class GPSTracker extends Service implements LocationListener {
 
 	private final Context mContext;
@@ -38,6 +40,8 @@ public class GPSTracker extends Service implements LocationListener {
 
 	// Declaring a Location Manager
 	protected LocationManager locationManager;
+
+	final static int REQUEST_LOCATION = 199;
 
 	public GPSTracker(Context context) {
 		this.mContext = context;
@@ -161,6 +165,7 @@ public class GPSTracker extends Service implements LocationListener {
         // On pressing Settings button
         alertDialog.setPositiveButton("Settings", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog,int which) {
+				LoginActivity.isFirstTime = false;
             	Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
             	mContext.startActivity(intent);
             }

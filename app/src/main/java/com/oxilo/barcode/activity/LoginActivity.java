@@ -3,6 +3,7 @@ package com.oxilo.barcode.activity;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Rect;
@@ -63,6 +64,7 @@ public class LoginActivity  extends AppCompatActivity {
     public static final String BARCODERESULT = "barcodeResult";
     private static final int RC_BARCODE_CAPTURE = 9001;
     private static final String TAG = "BarcodeMain";
+    public static  boolean isFirstTime = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,10 +75,13 @@ public class LoginActivity  extends AppCompatActivity {
         initUiView();
     }
 
+
+
     @Override
     protected void onResume() {
         super.onResume();
         // check if GPS enabled
+
         if(gps.canGetLocation()){
 
             latitude = gps.getLatitude();
@@ -86,6 +91,7 @@ public class LoginActivity  extends AppCompatActivity {
             // can't get location
             // GPS or Network is not enabled
             // Ask user to enable GPS/network in settings
+            if (isFirstTime)
             gps.showSettingsAlert();
         }
     }
@@ -156,8 +162,8 @@ public class LoginActivity  extends AppCompatActivity {
                 }
             });
 
-//            mEmailView.setText(AppConstants.USERNAME);
-//            mPasswordView.setText(AppConstants.PASSWORD);
+            mEmailView.setText(AppConstants.USERNAME);
+            mPasswordView.setText(AppConstants.PASSWORD);
             mConsumerSecret.setText(AppConstants.CONSUMER_SECRET);
             mConsumerKey.setText(AppConstants.CONSUMER_KEY);
             mSecurityToken.setText(AppConstants.SECURITY_TOKEN);
@@ -309,13 +315,12 @@ public class LoginActivity  extends AppCompatActivity {
             RequestQueue mRequestQueue = Volley.newRequestQueue(getApplicationContext());
             String uri = String.format("https://login.salesforce.com/services/oauth2/token?grant_type=%1$s&password=%2$s&username=%3$s&client_secret=%4$s&client_id=%5$s",
                     AppConstants.GRANT_TYPE,
-                    password,
+                    password+security_token,
                     username,
                     consumer_secret,
                     consumer_key);
 
             Log.e("URL","" + uri);
-
             StringRequest myReq = new StringRequest(Request.Method.POST,
                     uri,
                     createMyReqSuccessListener(username, password,consumer_secret,consumer_key,security_token),
@@ -337,6 +342,7 @@ public class LoginActivity  extends AppCompatActivity {
             @Override
             public void onResponse(String response) {
                 try {
+
                     Gson gson = new GsonBuilder().create();
                     customRequest = gson.fromJson(response, CustomRequest.class);
                     customRequest.setEmail(username);
@@ -386,6 +392,8 @@ public class LoginActivity  extends AppCompatActivity {
                         }else{
                             Toast.makeText(getApplicationContext(), VolleyErrorHelper.getMessage(volleyError,LoginActivity.this), Toast.LENGTH_LONG).show();
                         }
+                    }else{
+                        Toast.makeText(getApplicationContext(), "Network problem", Toast.LENGTH_LONG).show();
                     }
 
                 }catch (Exception ex){
@@ -454,4 +462,7 @@ public class LoginActivity  extends AppCompatActivity {
             super.onActivityResult(requestCode, resultCode, data);
         }
     }
+
+
+
 }

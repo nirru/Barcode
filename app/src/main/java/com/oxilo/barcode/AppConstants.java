@@ -20,6 +20,6 @@ public class AppConstants {
 
     public  static  final  String SECURITY_TOKEN ="Yc52OwQfA88ehtDanUB8BrJqQ";
 
-    public static final int MY_SOCKET_TIMEOUT_MS = 10000;
+    public static final int MY_SOCKET_TIMEOUT_MS = 20000;
 
 }

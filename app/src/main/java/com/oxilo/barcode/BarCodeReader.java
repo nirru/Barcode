@@ -28,7 +28,9 @@ import com.google.android.gms.vision.barcode.Barcode;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.oxilo.barcode.Pojo.CustomRequest;
+import com.oxilo.barcode.Pojo.ErrorModal;
 import com.oxilo.barcode.activity.LoginActivity;
+import com.oxilo.barcode.volley.VolleyErrorHelper;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -38,6 +40,8 @@ import java.util.Map;
 
 public class BarCodeReader extends AppCompatActivity {
 
+    private static final double LATITUDE=0.0000000;
+    private static final double LONGITUDE=0.000000;
     private static final int RC_BARCODE_CAPTURE = 9001;
     private static final String TAG = "BarcodeMain";
     TextView text;
@@ -50,11 +54,14 @@ public class BarCodeReader extends AppCompatActivity {
     private View mProgressView;
     private View mLoginFormView;
 
+    private GPSTracker gps;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bar_code_reader);
 
+        gps = new GPSTracker(BarCodeReader.this);
         init();
 
 //        if (!isCameraOpen)
@@ -65,6 +72,13 @@ public class BarCodeReader extends AppCompatActivity {
         if (getIntent() != null){
             customRequest = getIntent().getParcelableExtra(getResources().getString(R.string.praceable_modal_regsitration));
             mBarcodevalue = getIntent().getStringExtra(LoginActivity.BARCODERESULT);
+            if (gps.canGetLocation()){
+                double lat = gps.getLatitude();
+                double lng = gps.getLongitude();
+                customRequest.setLatitude(lat);
+                customRequest.setLongitude(lng);
+            }
+
         }
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
@@ -83,7 +97,7 @@ public class BarCodeReader extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 save_btn1.setEnabled(true);
-               barCodeReaderLauncher();
+                barCodeReaderLauncher();
                 return;
             }
         });
@@ -91,7 +105,10 @@ public class BarCodeReader extends AppCompatActivity {
         save_btn1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (!text.getText().toString().equals(null) && text.getText().toString() != null )
                 doSomething();
+                else
+                    Toast.makeText(BarCodeReader.this,"Not a valid barcode",Toast.LENGTH_LONG).show();
             }
         });
 
@@ -179,7 +196,7 @@ public class BarCodeReader extends AppCompatActivity {
             if (customRequest != null){
                 uri = String.format("https://login.salesforce.com/services/oauth2/token?grant_type=%1$s&password=%2$s&username=%3$s&client_secret=%4$s&client_id=%5$s",
                         AppConstants.GRANT_TYPE,
-                        customRequest.getPassword(),
+                        customRequest.getPassword()+customRequest.getSecurityToken(),
                         customRequest.getEmail(),
                         customRequest.getClientSecret(),
                         customRequest.getClientId());
@@ -220,8 +237,25 @@ public class BarCodeReader extends AppCompatActivity {
             public void onErrorResponse(VolleyError volleyError) {
                 try {
                     showProgress(false);
-                    Toast.makeText(getApplicationContext(), volleyError.getMessage(), Toast.LENGTH_LONG)
-                            .show();
+                    if (volleyError.networkResponse != null){
+                        if(volleyError.networkResponse.statusCode==400) {
+                            Gson gson = new GsonBuilder().create();
+                            ErrorModal errorModal = gson.fromJson(new String(volleyError.networkResponse.data), ErrorModal.class);
+                            if (errorModal.getError().toString().equals("invalid_grant")){
+                                Toast.makeText(getApplicationContext(), R.string.invalid_grant, Toast.LENGTH_LONG).show();
+                            }else if (errorModal.getError().toString().equals("invalid_client")){
+                                Toast.makeText(getApplicationContext(), R.string.invalid_client, Toast.LENGTH_LONG).show();
+                            }
+                            else if (errorModal.getError().toString().equals("invalid_client_id")){
+                                Toast.makeText(getApplicationContext(), R.string.invalid_client_id, Toast.LENGTH_LONG).show();
+                            }
+                        }else{
+                            Toast.makeText(getApplicationContext(), VolleyErrorHelper.getMessage(volleyError,BarCodeReader.this), Toast.LENGTH_LONG).show();
+                        }
+                    }else{
+                        Toast.makeText(getApplicationContext(), "Network problem", Toast.LENGTH_LONG).show();
+                    }
+
                 }catch (Exception ex){
                     ex.printStackTrace();
                 }
@@ -233,8 +267,11 @@ public class BarCodeReader extends AppCompatActivity {
         JSONObject jsonBody = new JSONObject();
         try {
             jsonBody.put("CIRCEBarcode__Barcode__c", text.getText().toString().trim());
-            jsonBody.put("CIRCEBarcode__Geolocation__Latitude__s", customRequest.getLatitude());
-            jsonBody.put("CIRCEBarcode__Geolocation__Longitude__s", customRequest.getLongitude());
+            if (customRequest.getLatitude() != LATITUDE && customRequest.getLongitude() != LONGITUDE){
+                jsonBody.put("CIRCEBarcode__Geolocation__Latitude__s", customRequest.getLatitude());
+                jsonBody.put("CIRCEBarcode__Geolocation__Longitude__s", customRequest.getLongitude());
+            }
+
         } catch (JSONException e) {
             e.printStackTrace();
         }
