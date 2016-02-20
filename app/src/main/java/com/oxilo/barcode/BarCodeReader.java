@@ -225,7 +225,23 @@ public class BarCodeReader extends AppCompatActivity {
             @Override
             public void onResponse(String response) {
                 Gson gson = new GsonBuilder().create();
-                CustomRequest customRequest = gson.fromJson(response, CustomRequest.class);
+                CustomRequest customRequest1 = gson.fromJson(response, CustomRequest.class);
+                customRequest1.setEmail(customRequest.getEmail());
+                customRequest1.setPassword(customRequest.getPassword());
+                customRequest1.setClientSecret(customRequest.getClientSecret());
+                customRequest1.setClientId(customRequest.getClientId());
+                customRequest1.setSecurityToken(customRequest.getSecurityToken());
+                customRequest1.setLatitude(customRequest.getLatitude());
+                customRequest1.setLongitude(customRequest.getLongitude());
+                BarCodePrefs mobiKytePrefs = ApplicationController.getInstance().getMobiKytePrefs();
+                if(mobiKytePrefs != null) {
+                    mobiKytePrefs.clear();
+                    mobiKytePrefs.putObject("user", customRequest1);
+                    mobiKytePrefs.commit();
+
+                } else {
+                    android.util.Log.e("MOBIKYTE PREFS==", "Preference is null");
+                }
                 saveBarCodeEntry();
             }
         };
@@ -264,21 +280,26 @@ public class BarCodeReader extends AppCompatActivity {
         };
     }
     private void saveBarCodeEntry(){
-        JSONObject jsonBody = new JSONObject();
-        try {
-            jsonBody.put("CIRCEBarcode__Barcode__c", text.getText().toString().trim());
-            if (customRequest.getLatitude() != LATITUDE && customRequest.getLongitude() != LONGITUDE){
-                jsonBody.put("CIRCEBarcode__Geolocation__Latitude__s", customRequest.getLatitude());
-                jsonBody.put("CIRCEBarcode__Geolocation__Longitude__s", customRequest.getLongitude());
+        BarCodePrefs barCodePrefs = ApplicationController.getInstance().getMobiKytePrefs();
+        JSONObject jsonBody = null;
+        if(barCodePrefs != null) {
+            customRequest =barCodePrefs.getObject("user",CustomRequest.class);
+             jsonBody = new JSONObject();
+            try {
+                jsonBody.put("CIRCEBarcode__Barcode__c", text.getText().toString().trim());
+                if (customRequest.getLatitude() != LATITUDE && customRequest.getLongitude() != LONGITUDE){
+                    jsonBody.put("CIRCEBarcode__Geolocation__Latitude__s", customRequest.getLatitude());
+                    jsonBody.put("CIRCEBarcode__Geolocation__Longitude__s", customRequest.getLongitude());
+                }
+
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
-
-        } catch (JSONException e) {
-            e.printStackTrace();
         }
-
+        String url = customRequest.getInstanceUrl() + "/" + "services/data/v20.0/sobjects/CIRCEBarcode__Barcode__c";
         RequestQueue queue = Volley.newRequestQueue(getApplicationContext());
         JsonObjectRequest request = new JsonObjectRequest(
-                Request.Method.POST, "https://ap2.salesforce.com/services/data/v20.0/sobjects/CIRCEBarcode__Barcode__c", jsonBody,
+                Request.Method.POST, url, jsonBody,
                 new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {

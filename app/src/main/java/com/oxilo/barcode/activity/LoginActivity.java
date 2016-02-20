@@ -162,11 +162,11 @@ public class LoginActivity  extends AppCompatActivity {
                 }
             });
 
-            mEmailView.setText(AppConstants.USERNAME);
-            mPasswordView.setText(AppConstants.PASSWORD);
-            mConsumerSecret.setText(AppConstants.CONSUMER_SECRET);
-            mConsumerKey.setText(AppConstants.CONSUMER_KEY);
-            mSecurityToken.setText(AppConstants.SECURITY_TOKEN);
+//            mEmailView.setText(AppConstants.USERNAME);
+//            mPasswordView.setText(AppConstants.PASSWORD);
+//            mConsumerSecret.setText(AppConstants.CONSUMER_SECRET);
+//            mConsumerKey.setText(AppConstants.CONSUMER_KEY);
+//            mSecurityToken.setText(AppConstants.SECURITY_TOKEN);
 
             BarCodePrefs barCodePrefs = ApplicationController.getInstance().getMobiKytePrefs();
             if(barCodePrefs != null) {
@@ -355,6 +355,7 @@ public class LoginActivity  extends AppCompatActivity {
 
                     BarCodePrefs mobiKytePrefs = ApplicationController.getInstance().getMobiKytePrefs();
                     if(mobiKytePrefs != null) {
+                        mobiKytePrefs.clear();
                         mobiKytePrefs.putObject("user", customRequest);
                         mobiKytePrefs.commit();
 
