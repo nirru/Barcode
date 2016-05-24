@@ -286,17 +286,17 @@ public class BarCodeReader extends AppCompatActivity {
             customRequest =barCodePrefs.getObject("user",CustomRequest.class);
              jsonBody = new JSONObject();
             try {
-                jsonBody.put("CIRCEBarcode__Barcode__c", text.getText().toString().trim());
+                jsonBody.put("CIRCScan__Barcode__c", text.getText().toString().trim());
                 if (customRequest.getLatitude() != LATITUDE && customRequest.getLongitude() != LONGITUDE){
-                    jsonBody.put("CIRCEBarcode__Geolocation__Latitude__s", customRequest.getLatitude());
-                    jsonBody.put("CIRCEBarcode__Geolocation__Longitude__s", customRequest.getLongitude());
+                    jsonBody.put("CIRCScan__Geolocation__Latitude__s", customRequest.getLatitude());
+                    jsonBody.put("CIRCScan__Geolocation__Longitude__s", customRequest.getLongitude());
                 }
 
             } catch (JSONException e) {
                 e.printStackTrace();
             }
         }
-        String url = customRequest.getInstanceUrl() + "/" + "services/data/v20.0/sobjects/CIRCEBarcode__Barcode__c";
+        String url = customRequest.getInstanceUrl() + "/" + "services/data/v20.0/sobjects/CIRCScan__Barcode__c";
         RequestQueue queue = Volley.newRequestQueue(getApplicationContext());
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.POST, url, jsonBody,
